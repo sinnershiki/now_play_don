@@ -1,0 +1,19 @@
+{
+  "name": "now_play_don",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kosuke Sugano",
+  "license": "MIT",
+  "dependencies": {
+    "electron-open-link-in-browser": "^1.0.2",
+    "electron-template-menu": "^1.0.3",
+    "jquery": "^3.2.1",
+    "mastodon-api": "^1.3.0",
+    "menubar": "^5.2.3",
+    "playback": "^0.2.0"
+  }
+}

@@ -1,0 +1,9 @@
+{
+    "app_name": "NowPlayDon",
+    "scope": "read write",
+    "redirect_url": "urn:ietf:wg:oauth:2.0:oob",
+    "host": null,
+    "client_id": null,
+    "client_secret": null,
+    "access_token": null
+}

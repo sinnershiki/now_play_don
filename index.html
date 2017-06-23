@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Now Play Don</title>
+        <script>
+         const $ = require('jquery');
+         const ipcRenderer = require('electron').ipcRenderer;
+
+         $(function () {
+             $('#token-form').submit(function() {
+                 let token = $('.input-token').val();
+
+                 ipcRenderer.send('token', { authorization_code: token });
+                 return false;
+             });
+         });
+        </script>
+    </head>
+    <body>
+        <div class="now-playing-track">
+            <p></p>
+        </div>
+    </body>
+</html>
