@@ -34,3 +34,7 @@ node_modules
 
 # Optional REPL history
 .node_repl_history
+
+
+/now_play_don-darwin-x64
+/now_play_don-win32-x64
