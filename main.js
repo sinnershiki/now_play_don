@@ -81,6 +81,14 @@ app.on('ready', () => {
             });
     });
 
+    // now playing情報を初期化するフック
+    ipcMain.on('init_now_playing', function( event ){
+        itunes.currentTrack(function(data){
+            let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
+            event.sender.send('now_playing', {message: message});
+        });
+    });
+
     if(authJson.client_id === null || authJson.client_secret === null || authJson.host === null){
         mainWindow.loadURL('file://' + __dirname + '/host.html');
     }else if(authJson.access_token === null){
@@ -92,6 +100,7 @@ app.on('ready', () => {
                 shell.openExternal(url);
             });
     }else{
+        baseUrl += authJson.host;
         // Electronに表示するhtmlを絶対パスで指定（相対パスだと動かない）
         mainWindow.loadURL('file://' + __dirname + '/index.html');
 
@@ -113,11 +122,14 @@ function postNowplaying(access_token){
     itunes.on('playing', function(data){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
+
             M.post('statuses', {status: message}, function (err, data, res) {
                 if (err){
                     console.log(err);
                 }
             });
+
+            mainWindow.webContents.send('now_playing', { message: message });
         }
         beforeMusic = data.name;
     });

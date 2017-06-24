@@ -7,19 +7,15 @@
          const $ = require('jquery');
          const ipcRenderer = require('electron').ipcRenderer;
 
-         $(function () {
-             $('#token-form').submit(function() {
-                 let token = $('.input-token').val();
-
-                 ipcRenderer.send('token', { authorization_code: token });
-                 return false;
-             });
+         ipcRenderer.send('init_now_playing');
+         ipcRenderer.on('now_playing', function(event, data){
+             $('.message').text(data.message);
          });
         </script>
     </head>
     <body>
         <div class="now-playing-track">
-            <p></p>
+            <p class="message">#now_play_don music / album / artist</p>
         </div>
     </body>
 </html>
