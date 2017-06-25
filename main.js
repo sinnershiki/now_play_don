@@ -46,7 +46,6 @@ app.on('ready', () => {
                     fs.writeFile(configFilePath, JSON.stringify(authJson, null, '    '));
 
                     mainWindow.loadURL('file://' + __dirname + '/auth.html');
-
                     return mastodon.getAuthorizationUrl(res.client_id, res.client_secret, baseUrl);
                 }
             }).then(url => {
@@ -84,7 +83,12 @@ app.on('ready', () => {
     // now playing情報を初期化するフック
     ipcMain.on('init_now_playing', function( event ){
         itunes.currentTrack(function(data){
-            let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
+            let message = "#now_play_don ";
+            if(data != null){
+                message += data.name+" / "+data.album+" / "+data.artist;
+            }else{
+                message += "music / album / artist";
+            }
             event.sender.send('now_playing', {message: message});
         });
     });
