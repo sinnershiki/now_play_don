@@ -8,7 +8,7 @@ const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const Protocol = "https";
-const configFilePath = "config/auth.json";
+const configFilePath = __dirname +"/config/auth.json";
 
 let authJson = null;
 let baseUrl = Protocol+"://";
