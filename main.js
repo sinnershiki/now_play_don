@@ -12,12 +12,13 @@ const mastodon = require('mastodon-api');
 const fs = require('fs');
 
 const Protocol = "https";
-const configFilePath = __dirname +"/config/auth.json";
+const configFileName = "auth.json";
 
 let authJson = null;
 let baseUrl = Protocol+"://";
 let beforeMusic = null;
 let mainWindow = null;
+let configFilePath = "";
 
 app.on('ready', () => {
     // Create the Application's main menu
@@ -48,17 +49,17 @@ app.on('ready', () => {
     Menu.setApplicationMenu(menu);
 
     try {
+        configFilePath = app.getPath('userData') + configFileName;
+        console.log(configFilePath);
         authJson = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     } catch (e) {
         //console.log(e);
         console.log("nothing auth.json");
-        authJson = JSON.parse(fs.readFileSync(configFilePath+".sample", 'utf8'));
+        authJson = JSON.parse(fs.readFileSync(__dirname+"/config/"+configFileName+".sample", 'utf8'));
     }
 
     // mainWindowを作成（windowの大きさや、Kioskモードにするかどうかなどもここで定義できる）
     mainWindow = new BrowserWindow({width: 600, height: 600});
-    // ChromiumのDevツールを開く
-    mainWindow.webContents.openDevTools();
 
     // アプリ作成設定を受け取るフック
     ipcMain.on('host', function(event, data){
