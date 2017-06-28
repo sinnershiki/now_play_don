@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <title>Input Host</title>
+
         <script>
          const $ = require('jquery');
          const ipcRenderer = require('electron').ipcRenderer;
@@ -10,7 +11,6 @@
          $(function () {
              $('#host-form').submit(function() {
                  let host = $('.input-host').val();
-                 console.log(host);
 
                  ipcRenderer.send('host', { host: host });
                  return false;
