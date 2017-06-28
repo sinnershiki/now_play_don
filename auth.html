@@ -10,8 +10,6 @@
          $(function () {
              $('#token-form').submit(function() {
                  let token = $('.input-token').val();
-                 console.log(token);
-                 console.log("input-token");
 
                  ipcRenderer.send('token', { authorization_code: token });
                  return false;

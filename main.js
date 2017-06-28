@@ -1,12 +1,16 @@
+// electronまわり読み込み
 const electron = require('electron');
+const {app} = electron;
+const {Menu} = electron;
+const {ipcMain} = electron;
+const {shell} = electron;
+const {BrowserWindow} = electron;
+
+const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
 const itunes = require('playback');
 const mastodon = require('mastodon-api');
 const fs = require('fs');
-const {shell} = require('electron');
-const ipcMain = require('electron').ipcMain;
-const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
-const app = electron.app;
-const BrowserWindow = electron.BrowserWindow;
+
 const Protocol = "https";
 const configFilePath = __dirname +"/config/auth.json";
 
@@ -14,7 +18,35 @@ let authJson = null;
 let baseUrl = Protocol+"://";
 let beforeMusic = null;
 let mainWindow = null;
+
 app.on('ready', () => {
+    // Create the Application's main menu
+    const template = [
+        {
+            label: "Application",
+            submenu: [
+                { label: "About Application", selector: "orderFrontStandardAboutPanel:" },
+                { type: "separator" },
+                { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
+            ]
+        },
+        {
+            label: "Edit",
+            submenu: [
+                { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+                { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+                { type: "separator" },
+                { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+                { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+                { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+                { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" },
+            ]
+        }
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+    Menu.setApplicationMenu(menu);
+
     try {
         authJson = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     } catch (e) {
@@ -113,6 +145,7 @@ app.on('ready', () => {
 
     mainWindow.on('closed', function() {
         mainWindow = null;
+        app.quit();
     });
 });
 
