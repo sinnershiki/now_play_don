@@ -21,6 +21,17 @@
              $('.message').text(data.message);
          });
 
+         ipcRenderer.on('ready_step2', function(event, data){
+             $('.host').hide();
+             $('.code').show();
+         });
+
+         ipcRenderer.on('ready_now_playing', function(event, data){
+             $('.host').hide();
+             $('.code').hide();
+             $('.now-playing-track').show();
+         });
+
          ipcRenderer.on('now_playing', function(event, data){
              $('.message').text(data.message);
          });

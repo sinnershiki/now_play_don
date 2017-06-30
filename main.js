@@ -50,7 +50,8 @@ mb.on('ready', () => {
     Menu.setApplicationMenu(menu);
 
     try {
-        configFilePath = app.getPath('userData') + configFileName;
+        configFilePath = mb.app.getPath('userData') +"/"+ configFileName;
+        console.log(configFilePath);
         config = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     } catch (e) {
         console.log("nothing auth.json");
@@ -59,6 +60,19 @@ mb.on('ready', () => {
 
     // menubarのwindowを表示
     mb.showWindow();
+
+    // host情報がありaccesstokenがない場合
+    if(config.host != null && config.access_token === null){
+        baseUrl += config.host;
+        mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
+            .then(url => {
+                console.log(url);
+                shell.openExternal(url);
+            });
+    }else if(config.host != null && config.access_token != null){ //config情報が揃っている場合
+        baseUrl += config.host;
+        postNowplaying(config.access_token);
+    }
 
     // アプリ作成設定を受け取るフック
     ipcMain.on('host', function(event, data){
@@ -74,17 +88,11 @@ mb.on('ready', () => {
                     config.client_secret = res.client_secret;
                     fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
-                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
-                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
+                    event.sender.send('ready_step2', {host: config.host});
                     return mastodon.getAuthorizationUrl(res.client_id, res.client_secret, baseUrl);
                 }
             }).then(url => {
-                if(url === null){
-                    //mainWindow.loadURL('file://' + __dirname + '/host.html');
-                    //mb.setOpion("index", 'file://' + __dirname + '/host.html');
-                }else{
-                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
-                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
+                if(url != null){
                     mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
                         .then(url => {
                             shell.openExternal(url);
@@ -94,26 +102,17 @@ mb.on('ready', () => {
     });
 
     // authorization_codeをもらうためのフック
-    ipcMain.on('token', function( event, data ){
-        //mainWindow.loadURL('file://' + __dirname + '/index.html');
+    ipcMain.on('code', function( event, data ){
         mastodon.getAccessToken(config.client_id, config.client_secret, data.authorization_code, baseUrl)
             .catch(err => console.error(err))
             .then(accessToken => {
                 console.log(`This is the access token. Save it!\n${accessToken}`);
-                if(accessToken === undefined){
-                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
-                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
-                }else{
+                if(accessToken != undefined){
                     config.access_token = accessToken;
                     fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
-                    M = new mastodon({
-                        access_token: authJson.access_token,
-                        timeout_ms: 60 * 1000,
-                        api_url: baseUrl+"/api/v1/"
-                    });
-
-                    postNowplaying(M);
+                    event.sender.send('ready_now_playing', {message: "success"});
+                    postNowplaying(accessToken);
                 }
             });
     });
@@ -134,25 +133,6 @@ mb.on('ready', () => {
         });
     });
 
-    if(config.client_id === null || config.client_secret === null || config.host === null){
-        //mainWindow.loadURL('file://' + __dirname + '/host.html');
-        //mb.setOpion("index", 'file://' + __dirname + '/host.html');
-    }else if(config.access_token === null){
-        baseUrl += config.host;
-        //mainWindow.loadURL('file://' + __dirname + '/auth.html');
-        //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
-        mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
-            .then(url => {
-                console.log(url);
-                shell.openExternal(url);
-            });
-    }else{
-        baseUrl += config.host;
-        // Electronに表示するhtmlを絶対パスで指定（相対パスだと動かない）
-        //mainWindow.loadURL('file://' + __dirname + '/index.html');
-
-        postNowplaying(config.access_token);
-    }
 });
 
 function postNowplaying(mastodonCli){
