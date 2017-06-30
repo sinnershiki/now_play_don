@@ -4,94 +4,89 @@ const {app} = electron;
 const {Menu} = electron;
 const {ipcMain} = electron;
 const {shell} = electron;
-const {dialog} = electron;
-const {BrowserWindow} = electron;
 
 const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
 const itunes = require('playback');
 const mastodon = require('mastodon-api');
 const fs = require('fs');
-const isOnline = require('is-online');
+const menubar = require('menubar');
+const mb = menubar();
 
 const Protocol = "https";
 const configFileName = "auth.json";
 let M;
 
-let authJson = null;
+let config = null;
 let baseUrl = Protocol+"://";
 let beforeMusic = null;
 let mainWindow = null;
 let configFilePath = "";
+// Create the Application's main menu
+const template = [
+    {
+        label: "Application",
+        submenu: [
+            { label: "About Application", selector: "orderFrontStandardAboutPanel:" },
+            { type: "separator" },
+            { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
+        ]
+    },
+    {
+        label: "Edit",
+        submenu: [
+            { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
+            { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
+            { type: "separator" },
+            { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
+            { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
+            { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
+            { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" },
+        ]
+    }
+];
 
-app.on('ready', () => {
-    // Create the Application's main menu
-    const template = [
-        {
-            label: "Application",
-            submenu: [
-                { label: "About Application", selector: "orderFrontStandardAboutPanel:" },
-                { type: "separator" },
-                { label: "Quit", accelerator: "Command+Q", click: function() { app.quit(); }}
-            ]
-        },
-        {
-            label: "Edit",
-            submenu: [
-                { label: "Undo", accelerator: "CmdOrCtrl+Z", selector: "undo:" },
-                { label: "Redo", accelerator: "Shift+CmdOrCtrl+Z", selector: "redo:" },
-                { type: "separator" },
-                { label: "Cut", accelerator: "CmdOrCtrl+X", selector: "cut:" },
-                { label: "Copy", accelerator: "CmdOrCtrl+C", selector: "copy:" },
-                { label: "Paste", accelerator: "CmdOrCtrl+V", selector: "paste:" },
-                { label: "Select All", accelerator: "CmdOrCtrl+A", selector: "selectAll:" },
-            ]
-        }
-    ];
-
+mb.on('ready', () => {
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
 
     try {
         configFilePath = app.getPath('userData') + configFileName;
-        console.log(configFilePath);
-        authJson = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
+        config = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     } catch (e) {
-        //console.log(e);
         console.log("nothing auth.json");
-        authJson = JSON.parse(fs.readFileSync(__dirname+"/config/"+configFileName+".sample", 'utf8'));
+        config = JSON.parse(fs.readFileSync(__dirname+"/config/"+configFileName+".sample", 'utf8'));
     }
 
-    // mainWindowを作成（windowの大きさや、Kioskモードにするかどうかなどもここで定義できる）
-    mainWindow = new BrowserWindow({width: 600, height: 600});
+    // menubarのwindowを表示
+    mb.showWindow();
 
     // アプリ作成設定を受け取るフック
     ipcMain.on('host', function(event, data){
-        console.log(data);
         baseUrl += data.host;
-        mastodon.createOAuthApp(baseUrl + '/api/v1/apps', authJson.app_name, authJson.scope)
+        mastodon.createOAuthApp(baseUrl + '/api/v1/apps', config.app_name, config.scope)
             .catch(err => console.error(err))
             .then((res) => {
-                console.log("host");
-                console.log(res);
                 if(res.client_id === undefined || res.client_secret === undefined ){
                     return null;
                 }else{
-                    authJson.host = data.host;
-                    authJson.client_id = res.client_id;
-                    authJson.client_secret = res.client_secret;
-                    fs.writeFile(configFilePath, JSON.stringify(authJson, null, '    '));
+                    config.host = data.host;
+                    config.client_id = res.client_id;
+                    config.client_secret = res.client_secret;
+                    fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
-                    mainWindow.loadURL('file://' + __dirname + '/auth.html');
+                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
+                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
                     return mastodon.getAuthorizationUrl(res.client_id, res.client_secret, baseUrl);
                 }
             }).then(url => {
                 if(url === null){
-                    mainWindow.loadURL('file://' + __dirname + '/host.html');
+                    //mainWindow.loadURL('file://' + __dirname + '/host.html');
+                    //mb.setOpion("index", 'file://' + __dirname + '/host.html');
                 }else{
-                    mainWindow.loadURL('file://' + __dirname + '/auth.html');
-                    mastodon.getAuthorizationUrl(authJson.client_id, authJson.client_secret, baseUrl, authJson.scope)
+                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
+                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
+                    mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
                         .then(url => {
-                            console.log(url);
                             shell.openExternal(url);
                         });
                 }
@@ -100,16 +95,17 @@ app.on('ready', () => {
 
     // authorization_codeをもらうためのフック
     ipcMain.on('token', function( event, data ){
-        mainWindow.loadURL('file://' + __dirname + '/index.html');
-        mastodon.getAccessToken(authJson.client_id, authJson.client_secret, data.authorization_code, baseUrl)
+        //mainWindow.loadURL('file://' + __dirname + '/index.html');
+        mastodon.getAccessToken(config.client_id, config.client_secret, data.authorization_code, baseUrl)
             .catch(err => console.error(err))
             .then(accessToken => {
                 console.log(`This is the access token. Save it!\n${accessToken}`);
                 if(accessToken === undefined){
-                    mainWindow.loadURL('file://' + __dirname + '/auth.html');
+                    //mainWindow.loadURL('file://' + __dirname + '/auth.html');
+                    //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
                 }else{
-                    authJson.access_token = accessToken;
-                    fs.writeFile(configFilePath, JSON.stringify(authJson, null, '    '));
+                    config.access_token = accessToken;
+                    fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
                     M = new mastodon({
                         access_token: authJson.access_token,
@@ -123,7 +119,7 @@ app.on('ready', () => {
     });
 
     // now playing情報を初期化するフック
-    ipcMain.on('init_now_playing', function( event ){
+    ipcMain.on('init', function( event ){
         itunes.currentTrack(function(data){
             let message = "#now_play_don ";
             if(data != null){
@@ -131,37 +127,32 @@ app.on('ready', () => {
             }else{
                 message += "music / album / artist";
             }
-            event.sender.send('now_playing', {message: message});
+
+            let sendData = {host: config.host, existToken: Boolean(config.access_token), message: message};
+            console.log(sendData);
+            event.sender.send('init', sendData);
         });
     });
 
-    if(authJson.client_id === null || authJson.client_secret === null || authJson.host === null){
-        mainWindow.loadURL('file://' + __dirname + '/host.html');
-    }else if(authJson.access_token === null){
-        baseUrl += authJson.host;
-        mainWindow.loadURL('file://' + __dirname + '/auth.html');
-        mastodon.getAuthorizationUrl(authJson.client_id, authJson.client_secret, baseUrl, authJson.scope)
+    if(config.client_id === null || config.client_secret === null || config.host === null){
+        //mainWindow.loadURL('file://' + __dirname + '/host.html');
+        //mb.setOpion("index", 'file://' + __dirname + '/host.html');
+    }else if(config.access_token === null){
+        baseUrl += config.host;
+        //mainWindow.loadURL('file://' + __dirname + '/auth.html');
+        //mb.setOpion("index", 'file://' + __dirname + '/auth.html');
+        mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
             .then(url => {
                 console.log(url);
                 shell.openExternal(url);
             });
     }else{
-        baseUrl += authJson.host;
+        baseUrl += config.host;
         // Electronに表示するhtmlを絶対パスで指定（相対パスだと動かない）
-        mainWindow.loadURL('file://' + __dirname + '/index.html');
+        //mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-        M = new mastodon({
-            access_token: authJson.access_token,
-            timeout_ms: 60 * 1000,
-            api_url: baseUrl+"/api/v1/"
-        });
-        postNowplaying(M);
+        postNowplaying(config.access_token);
     }
-
-    mainWindow.on('closed', function() {
-        mainWindow = null;
-        app.quit();
-    });
 });
 
 function postNowplaying(mastodonCli){
@@ -169,16 +160,13 @@ function postNowplaying(mastodonCli){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            isOnline().then(online => {
-                if(online){
-                    mastodonCli.post('statuses', {status: message}, function (err, data, res) {
-                        if (err){
-                            console.log(err);
-                        }
-                    });
+            /*M.post('statuses', {status: message}, function (err, data, res) {
+                if (err){
+                    console.log(err);
                 }
-            });
-            mainWindow.webContents.send('now_playing', { message: message });
+            });*/
+
+            mb.window.webContents.send('now_playing', { message: message });
         }
         beforeMusic = data.name;
     });

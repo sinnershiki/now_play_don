@@ -7,14 +7,63 @@
          const $ = require('jquery');
          const ipcRenderer = require('electron').ipcRenderer;
 
-         ipcRenderer.send('init_now_playing');
+         ipcRenderer.send('init');
+         ipcRenderer.on('init', function(event, data){
+             if(!Boolean(data.host)){
+                 $('.host').show();
+             }else if(!data.existToken){
+                 $('.code').show();
+             }else{
+                 $('.host').hide();
+                 $('.code').hide();
+                 $('.now-playing-track').show();
+             }
+             $('.message').text(data.message);
+         });
+
          ipcRenderer.on('now_playing', function(event, data){
              $('.message').text(data.message);
+         });
+
+         $(function () {
+             // host情報受け取り
+             $('#host-form').submit(function() {
+                 let host = $('.input-host').val();
+
+                 ipcRenderer.send('host', { host: host });
+                 return false;
+             });
+
+             // authorization_code情報を受け取る
+             $('#code-form').submit(function() {
+                 let code = $('.input-code').val();
+
+                 ipcRenderer.send('code', { authorization_code: code });
+                 return false;
+             });
          });
         </script>
     </head>
     <body>
-        <div class="now-playing-track">
+        <div class="host" style="display:none">
+            <form id="host-form">
+                <p>step1:input mastodon host</p>
+                <p>
+                    https://<input placeHolder="hint.mastdon.com" class="input-host" name="host" type="text">
+                    <input type="submit">
+                </p>
+            </form>
+        </div>
+        <div class="code" style="display:none">
+            <p>step2:input authorization_code</p>
+            <form id="code-form">
+                <p>
+                    <input class="input-code" placeHolder="authorization_code" name="code" type="text">
+                    <input type="submit">
+                </p>
+            </form>
+        </div>
+        <div class="now-playing-track" style="display:none">>
             <p class="message">#now_play_don music / album / artist</p>
         </div>
     </body>
