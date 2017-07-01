@@ -11,6 +11,7 @@
   "dependencies": {
     "electron-open-link-in-browser": "^1.0.2",
     "electron-template-menu": "^1.0.3",
+    "is-online": "^7.0.0",
     "jquery": "^3.2.1",
     "mastodon-api": "^1.3.0",
     "menubar": "^5.2.3",
