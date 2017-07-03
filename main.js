@@ -4,15 +4,18 @@ const {app} = electron;
 const {Menu} = electron;
 const {ipcMain} = electron;
 const {shell} = electron;
+const {dialog} = electron;
 const {BrowserWindow} = electron;
 
 const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
 const itunes = require('playback');
 const mastodon = require('mastodon-api');
 const fs = require('fs');
+const isOnline = require('is-online');
 
 const Protocol = "https";
 const configFilePath = __dirname +"/config/auth.json";
+let M;
 
 let authJson = null;
 let baseUrl = Protocol+"://";
@@ -107,7 +110,13 @@ app.on('ready', () => {
                     authJson.access_token = accessToken;
                     fs.writeFile(configFilePath, JSON.stringify(authJson, null, '    '));
 
-                    postNowplaying(accessToken);
+                    M = new mastodon({
+                        access_token: authJson.access_token,
+                        timeout_ms: 60 * 1000,
+                        api_url: baseUrl+"/api/v1/"
+                    });
+
+                    postNowplaying(M);
                 }
             });
     });
@@ -140,7 +149,12 @@ app.on('ready', () => {
         // Electronに表示するhtmlを絶対パスで指定（相対パスだと動かない）
         mainWindow.loadURL('file://' + __dirname + '/index.html');
 
-        postNowplaying(authJson.access_token);
+        M = new mastodon({
+            access_token: authJson.access_token,
+            timeout_ms: 60 * 1000,
+            api_url: baseUrl+"/api/v1/"
+        });
+        postNowplaying(M);
     }
 
     mainWindow.on('closed', function() {
@@ -149,23 +163,20 @@ app.on('ready', () => {
     });
 });
 
-function postNowplaying(access_token){
-    const M = new mastodon({
-        access_token: access_token,
-        timeout_ms: 60 * 1000,
-        api_url: baseUrl+"/api/v1/"
-    });
-
+function postNowplaying(mastodonCli){
     itunes.on('playing', function(data){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            M.post('statuses', {status: message}, function (err, data, res) {
-                if (err){
-                    console.log(err);
+            isOnline().then(online => {
+                if(online){
+                    mastodonCli.post('statuses', {status: message}, function (err, data, res) {
+                        if (err){
+                            console.log(err);
+                        }
+                    });
                 }
             });
-
             mainWindow.webContents.send('now_playing', { message: message });
         }
         beforeMusic = data.name;
