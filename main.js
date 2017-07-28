@@ -61,8 +61,10 @@ mb.on('ready', () => {
     // menubarのwindowを表示
     mb.showWindow();
 
-    // host情報がありaccesstokenがない場合
-    if(config.host != null && config.access_token === null){
+
+    if(config.host === null){
+
+    }else if(config.access_token === null){ // host情報がありaccesstokenがない場合
         baseUrl += config.host;
         mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
             .then(url => {
@@ -133,6 +135,11 @@ mb.on('ready', () => {
         });
     });
 
+    // 終了hook
+    ipcMain.on('quit', function( event, data ){
+        console.log(data.message);
+        mb.app.quit();
+    });
 });
 
 function postNowplaying(mastodonCli){
@@ -140,11 +147,14 @@ function postNowplaying(mastodonCli){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            /*M.post('statuses', {status: message}, function (err, data, res) {
+            /*
+            M.post('statuses', {status: message}, function (err, data, res) {
                 if (err){
                     console.log(err);
                 }
-            });*/
+            });
+            */
+            console.log(message);
 
             mb.window.webContents.send('now_playing', { message: message });
         }
