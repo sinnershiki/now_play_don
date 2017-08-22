@@ -4,6 +4,7 @@ const {app} = electron;
 const {Menu} = electron;
 const {ipcMain} = electron;
 const {shell} = electron;
+const {BrowserWindow} = electron;
 
 const electronOpenLinkInBrowser = require("electron-open-link-in-browser");
 const itunes = require('playback');
@@ -19,8 +20,9 @@ let M;
 let config = null;
 let baseUrl = Protocol+"://";
 let beforeMusic = null;
-let mainWindow = null;
 let configFilePath = "";
+let configWindow = null;
+
 // Create the Application's main menu
 const template = [
     {
@@ -58,12 +60,9 @@ mb.on('ready', () => {
         config = JSON.parse(fs.readFileSync(__dirname+"/config/"+configFileName+".sample", 'utf8'));
     }
 
-    // menubarのwindowを表示
-    mb.showWindow();
-
-
     if(config.host === null){
-
+        configWindow = new BrowserWindow({parent: mb.window, width: 300, height: 300});
+        configWindow.loadURL('file://' + __dirname + '/auth.html');
     }else if(config.access_token === null){ // host情報がありaccesstokenがない場合
         baseUrl += config.host;
         mastodon.getAuthorizationUrl(config.client_id, config.client_secret, baseUrl, config.scope)
@@ -72,6 +71,8 @@ mb.on('ready', () => {
                 shell.openExternal(url);
             });
     }else if(config.host != null && config.access_token != null){ //config情報が揃っている場合
+        // menubarのwindowを表示
+        mb.showWindow();
         baseUrl += config.host;
         postNowplaying(config.access_token);
     }
@@ -90,7 +91,6 @@ mb.on('ready', () => {
                     config.client_secret = res.client_secret;
                     fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
-                    event.sender.send('ready_step2', {host: config.host});
                     return mastodon.getAuthorizationUrl(res.client_id, res.client_secret, baseUrl);
                 }
             }).then(url => {
@@ -113,7 +113,9 @@ mb.on('ready', () => {
                     config.access_token = accessToken;
                     fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
 
-                    event.sender.send('ready_now_playing', {message: "success"});
+                    configWindow.hide();
+                    configWindow = null;
+                    mb.showWindow();
                     postNowplaying(accessToken);
                 }
             });
@@ -147,13 +149,11 @@ function postNowplaying(mastodonCli){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            /*
             M.post('statuses', {status: message}, function (err, data, res) {
                 if (err){
                     console.log(err);
                 }
             });
-            */
             console.log(message);
 
             mb.window.webContents.send('now_playing', { message: message });
