@@ -151,11 +151,11 @@ function postNowplaying(accessToken){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            // M.post('statuses', {status: message}, function (err, data, res) {
-            //     if (err){
-            //         console.log(err);
-            //     }
-            // });
+            M.post('statuses', {status: message}, function (err, data, res) {
+                if (err){
+                    console.log(err);
+                }
+            });
 
             mb.window.webContents.send('now_playing', { message: message });
         }
