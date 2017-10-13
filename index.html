@@ -7,15 +7,45 @@
          const $ = require('jquery');
          const ipcRenderer = require('electron').ipcRenderer;
 
-         ipcRenderer.send('init_now_playing');
+         ipcRenderer.send('init');
+         ipcRenderer.on('init', function(event, data){
+             $('.message').text(data.message);
+         });
+
+
          ipcRenderer.on('now_playing', function(event, data){
              $('.message').text(data.message);
          });
+
+         $(function () {
+             // host情報受け取り
+             $('#host-form').submit(function() {
+                 let host = $('.input-host').val();
+
+                 ipcRenderer.send('host', { host: host });
+                 return false;
+             });
+
+             // authorization_code情報を受け取る
+             $('#code-form').submit(function() {
+                 let code = $('.input-code').val();
+
+                 ipcRenderer.send('code', { authorization_code: code });
+                 return false;
+             });
+         });
+
+         const quit = function(){
+             ipcRenderer.send('quit', { message: 'quit' });
+         }
         </script>
     </head>
     <body>
-        <div class="now-playing-track">
+        <div class="now-playing-track" >
             <p class="message">#now_play_don music / album / artist</p>
+        </div>
+        <div class="quit">
+            <button class="quit-button" onClick="quit()">終了</button>
         </div>
     </body>
 </html>
