@@ -53,10 +53,8 @@ mb.on('ready', () => {
 
     try {
         configFilePath = mb.app.getPath('userData') +"/"+ configFileName;
-        console.log(configFilePath);
         config = JSON.parse(fs.readFileSync(configFilePath, 'utf8'));
     } catch (e) {
-        console.log("nothing auth.json");
         config = JSON.parse(fs.readFileSync(__dirname+"/config/"+configFileName+".sample", 'utf8'));
     }
 
@@ -108,7 +106,7 @@ mb.on('ready', () => {
         mastodon.getAccessToken(config.client_id, config.client_secret, data.authorization_code, baseUrl)
             .catch(err => console.error(err))
             .then(accessToken => {
-                console.log(`This is the access token. Save it!\n${accessToken}`);
+                //console.log(`This is the access token. Save it!\n${accessToken}`);
                 if(accessToken != undefined){
                     config.access_token = accessToken;
                     fs.writeFile(configFilePath, JSON.stringify(config, null, '    '));
@@ -132,14 +130,12 @@ mb.on('ready', () => {
             }
 
             let sendData = {host: config.host, existToken: Boolean(config.access_token), message: message};
-            console.log(sendData);
             event.sender.send('init', sendData);
         });
     });
 
     // 終了hook
     ipcMain.on('quit', function( event, data ){
-        console.log(data.message);
         mb.app.quit();
     });
 });
@@ -154,7 +150,6 @@ function postNowplaying(mastodonCli){
                     console.log(err);
                 }
             });
-            console.log(message);
 
             mb.window.webContents.send('now_playing', { message: message });
         }
