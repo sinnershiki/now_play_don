@@ -15,7 +15,6 @@ const mb = menubar();
 
 const Protocol = "https";
 const configFileName = "auth.json";
-let M;
 
 let config = null;
 let baseUrl = Protocol+"://";
@@ -114,6 +113,7 @@ mb.on('ready', () => {
                     configWindow.hide();
                     configWindow = null;
                     mb.showWindow();
+
                     postNowplaying(accessToken);
                 }
             });
@@ -140,16 +140,22 @@ mb.on('ready', () => {
     });
 });
 
-function postNowplaying(mastodonCli){
+function postNowplaying(accessToken){
+    const M = new mastodon({
+        access_token: accessToken,
+        timeout_ms: 60 * 1000,
+        api_url: baseUrl+"/api/v1/"
+    });
+
     itunes.on('playing', function(data){
         if(!(beforeMusic === data.name)){
             let message = "#now_play_don "+data.name+" / "+data.album+" / "+data.artist;
 
-            M.post('statuses', {status: message}, function (err, data, res) {
-                if (err){
-                    console.log(err);
-                }
-            });
+            // M.post('statuses', {status: message}, function (err, data, res) {
+            //     if (err){
+            //         console.log(err);
+            //     }
+            // });
 
             mb.window.webContents.send('now_playing', { message: message });
         }
